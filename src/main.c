@@ -19,69 +19,50 @@
 #include <stdio.h>
 #include <cpu.h>
 #include <wfi.h>
-#include <spinlock.h>
 #include <plat.h>
 #include <irq.h>
-#include <uart.h>
 #include <timer.h>
 #include <prefetch.h>
 
 #define TIMER_INTERVAL (TIME_S(1))
 
-spinlock_t print_lock = SPINLOCK_INITVAL;
-int test[1024] = {1};
+uint8_t test[448*1024] = {1};
 
-void uart_rx_handler(){
-    printf("cpu%d: %s\n",get_cpuid(), __func__);
-    uart_clear_rxirq();
-}
+// void ipi_handler(){
+//     printf("cpu%d: %s\n", get_cpuid(), __func__);
+// }
 
-void ipi_handler(){
-    printf("cpu%d: %s\n", get_cpuid(), __func__);
-    irq_send_ipi(1ull << (get_cpuid() + 1));
-}
+// void timer_handler(){
+//     printf("cpu%d: %s\n", get_cpuid(), __func__);
+//     timer_set(TIMER_INTERVAL);
+// }
 
-void timer_handler(){
-    printf("cpu%d: %s\n", get_cpuid(), __func__);
-    timer_set(TIMER_INTERVAL);
-    irq_send_ipi(1ull << (get_cpuid() + 1));
+void task() {
+    // Interfering task
+    while (1) {
+        clear_L2_cache((uint64_t)test, 448*1024);
+        prefetch_data((uint64_t)test, 448*1024);
+    }
 }
 
 void main(void){
+    // Greetings (useless but I like it)
+    printf("Bao bare-metal test guest\n");
 
+    // Set handlers for timer and IPI
+    // irq_set_handler(TIMER_IRQ_ID, timer_handler);
+    // irq_set_handler(IPI_IRQ_ID, ipi_handler);
 
-    static volatile bool master_done = false;
+    // Set timer value and enable timer interruption (useless for now but keep for later?)
+    // timer_set(TIMER_INTERVAL);
+    // irq_enable(TIMER_IRQ_ID);
+    // irq_set_prio(TIMER_IRQ_ID, IRQ_MAX_PRIO); 
 
-    if(cpu_is_master()){
-        spin_lock(&print_lock);
-        printf("Bao bare-metal test guest\n");
-        spin_unlock(&print_lock);
+    // Enable IPI interruption (useless for now but keep for later?)
+    // irq_enable(IPI_IRQ_ID);
+    // irq_set_prio(IPI_IRQ_ID, IRQ_MAX_PRIO);
 
-        irq_set_handler(UART_IRQ_ID, uart_rx_handler);
-        irq_set_handler(TIMER_IRQ_ID, timer_handler);
-        irq_set_handler(IPI_IRQ_ID, ipi_handler);
-
-        uart_enable_rxirq();
-
-        timer_set(TIMER_INTERVAL);
-        irq_enable(TIMER_IRQ_ID);
-        irq_set_prio(TIMER_IRQ_ID, IRQ_MAX_PRIO);
-
-        master_done = true;
-    }
-
-    irq_enable(UART_IRQ_ID);
-    irq_set_prio(UART_IRQ_ID, IRQ_MAX_PRIO);
-    irq_enable(IPI_IRQ_ID);
-    irq_set_prio(IPI_IRQ_ID, IRQ_MAX_PRIO);
-
-    clear_L2_cache((unsigned long long)test, 1024);
-    prefetch_data((unsigned long long)test, 1024);
-
-    while(!master_done);
-    spin_lock(&print_lock);
-    printf("cpu %d up\n", get_cpuid());
-    spin_unlock(&print_lock);
+    task();
 
     while(1) wfi();
 }
