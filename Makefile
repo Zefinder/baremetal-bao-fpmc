@@ -12,6 +12,7 @@ include $(ROOT_DIR)/setup.mk
 app_src_dir:=$(ROOT_DIR)/src
 include $(app_src_dir)/sources.mk
 C_SRC+=$(addprefix $(app_src_dir)/, $(src_c_srcs))
+ASM_SRC+=$(addprefix $(app_src_dir)/, $(src_s_srcs))
 
 # Include the final baremetal-runtime build
 include $(ROOT_DIR)/build.mk

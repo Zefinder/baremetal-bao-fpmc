@@ -24,6 +24,7 @@
 #include <irq.h>
 #include <uart.h>
 #include <timer.h>
+#include <prefetch.h>
 
 #define TIMER_INTERVAL (TIME_S(1))
 
@@ -46,6 +47,8 @@ void timer_handler(){
 }
 
 void main(void){
+
+    int test[448*1024];
 
     static volatile bool master_done = false;
 
@@ -71,6 +74,8 @@ void main(void){
     irq_set_prio(UART_IRQ_ID, IRQ_MAX_PRIO);
     irq_enable(IPI_IRQ_ID);
     irq_set_prio(IPI_IRQ_ID, IRQ_MAX_PRIO);
+
+    prefetch_data((unsigned long long)test, 448*1024);
 
     while(!master_done);
     spin_lock(&print_lock);
