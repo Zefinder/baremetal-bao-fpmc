@@ -26,7 +26,8 @@
 
 #define TIMER_INTERVAL (TIME_S(1))
 
-uint8_t test[448*1024] = {1};
+#define DATA_SIZE 512*1024
+uint8_t data[DATA_SIZE] = {2};
 
 // void ipi_handler(){
 //     printf("cpu%d: %s\n", get_cpuid(), __func__);
@@ -37,13 +38,7 @@ uint8_t test[448*1024] = {1};
 //     timer_set(TIMER_INTERVAL);
 // }
 
-void task() {
-    // Interfering task
-    while (1) {
-        clear_L2_cache((uint64_t)test, 448*1024);
-        prefetch_data((uint64_t)test, 448*1024);
-    }
-}
+extern void task(void);
 
 void main(void){
     // Greetings (useless but I like it)
@@ -64,5 +59,6 @@ void main(void){
 
     task();
 
+    // Should not come here since task should have a while(1)
     while(1) wfi();
 }
