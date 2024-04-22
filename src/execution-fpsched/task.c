@@ -7,34 +7,30 @@
 #include <irq.h>
 #include <timer.h>
 #include <prefetch.h>
+#include <hypercall.h>
 #include <data.h>
 
 #define CPU_PRIO 1
 
-int suspended = 0;
-
-void suspended_state()
-{
-    while (suspended)
-        ;
-}
+uint8_t pause = 0;
 
 void ipi_pause_handler()
 {
-    if (!suspended)
+    if (!pause)
     {
         // Pause task
-        suspended = 1;
-        suspended_state();
+        pause = 1;
+        // printf("Suspended\n");
     }
 }
 
 void ipi_resume_handler()
 {
-    if (suspended)
+    if (pause)
     {
         // Resume task
-        suspended = 0;
+        pause = 0;
+        // printf("Resumed\n");
     }
 }
 
@@ -51,6 +47,7 @@ void task()
     irq_enable(IPI_RESUME_IRQ);
     irq_set_prio(IPI_RESUME_IRQ, IRQ_MAX_PRIO);
 
+
     // Interfering task
     while (1)
     {
@@ -60,15 +57,14 @@ void task()
         // If access not granted then we suspend task
         if (!ack_access)
         {
-            suspended = 1;
-            suspended_state();
+            pause = 1;
         }
 
         // Access granted
-        prefetch_memory();
+        clear_L2_cache((uint64_t)data, DATA_SIZE);
+        prefetch_data((uint64_t)data, DATA_SIZE, &pause);
         revoke_memory_access();
 
         // Clear and reask
-        clear_L2_cache((uint64_t)data, DATA_SIZE);
     }
 }

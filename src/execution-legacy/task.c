@@ -7,10 +7,13 @@
 #include <irq.h>
 #include <timer.h>
 #include <prefetch.h>
+#include <data.h>
 
-void task() {
+void task()
+{
     // Interfering task
-    while (1) {
+    while (1)
+    {
         clear_L2_cache((uint64_t)data, DATA_SIZE);
         prefetch_data((uint64_t)data, DATA_SIZE);
     }

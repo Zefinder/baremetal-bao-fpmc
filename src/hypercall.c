@@ -1,4 +1,4 @@
-#include <hypervisor.h>
+#include <hypercall.h>
 
 int hypercall(enum hypervisor_actions action, int arg0, int arg1, int arg2) {
     int hypercall_id = HYPERCALL_BASE_VALUE | action;

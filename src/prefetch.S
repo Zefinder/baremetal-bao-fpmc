@@ -41,23 +41,32 @@ end_flush:
 .section .text
 
 /*
- * void prefetch_data(address, size)
+ * void prefetch_data(address, size, pause)
  * 
- * Prefetches [size] bytes from address [address]
+ * Prefetches [size] bytes from address [address]. If [pause] then 
+ * stop prefetch until ![pause]
  * 
  * x0: uint64_t address
  * x1: uint64_t size 
+ * x2: uint8_t *pause 
  */
 .func 
 prefetch_data:
     lsr x1, x1, #LOG2_L2_CACHE_LINE_SIZE    // x1 is now the remaining number of lines to prefetch
 
+suspended_state: 
+    // This is stupid, we want no access to mem and we put a while
+    ldr x3, [x2]        // Load pause value in x3
+    cmp x3, #1          // If pause is 1 then we jump to suspended
+    beq suspended_state      
+
 prefetch_loop:
     prfm PLDL2KEEP, [x0]            // Prefetch L2 cache from address [x0 & ~(L2_CACHE_LINE_SIZE - 1) ; x0 | (L2_CACHE_LINE_SIZE - 1)]
     add x0, x0, #L2_CACHE_LINE_SIZE // x0 += L2_CACHE_LINE_SIZE
     subs x1, x1, #1                 // Decrease remaining lines
-    bne prefetch_loop               // If x1 > 0 continue
+    bne suspended_state             // If x1 > 0 continue  
 
 end_prefetch:
     ret
+
 .endfunc
