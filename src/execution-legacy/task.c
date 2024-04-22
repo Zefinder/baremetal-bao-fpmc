@@ -11,10 +11,11 @@
 
 void task()
 {
+    uint8_t pause = 0;
     // Interfering task
     while (1)
     {
         clear_L2_cache((uint64_t)data, DATA_SIZE);
-        prefetch_data((uint64_t)data, DATA_SIZE);
+        prefetch_data((uint64_t)data, DATA_SIZE, &pause);
     }
 }
