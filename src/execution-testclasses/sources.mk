@@ -1,0 +1,1 @@
+task_c_srcs:= task.c
