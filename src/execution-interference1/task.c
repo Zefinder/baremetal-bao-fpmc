@@ -15,7 +15,7 @@ void task()
     // Interfering task
     while (1)
     {
-        clear_L2_cache((uint64_t)data, DATA_SIZE);
-        prefetch_data((uint64_t)data, DATA_SIZE, &pause);
+        clear_L2_cache((uint64_t)appdata, MAX_DATA_SIZE);
+        prefetch_data((uint64_t)appdata, MAX_DATA_SIZE, &pause);
     }
 }
