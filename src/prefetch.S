@@ -54,8 +54,9 @@ end_flush:
 prefetch_data:
     lsr x1, x1, #LOG2_L2_CACHE_LINE_SIZE    // x1 is now the remaining number of lines to prefetch
 
-suspended_state: 
-    ldr x3, [x2]        // Load pause value in x3
+suspended_state:
+    eor x3, x3, x3      // Reset x3 value
+    ldrb w3, [x2]       // Load pause byte value in x3
     cmp x3, #1          // If pause is 1 then we jump to suspended
     beq suspended_state      
 
