@@ -10,7 +10,7 @@
 #include <data.h>
 #include <hypercall.h>
 
-void empty_handler()
+void empty_handler(unsigned int id)
 {
 }
 

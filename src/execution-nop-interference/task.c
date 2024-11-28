@@ -12,7 +12,7 @@
 #include "prefetch_nop.h"
 
 uint8_t nop_number = 0;
-void ipi_handler()
+void ipi_handler(unsigned int id)
 {
     nop_number += 1;
 }

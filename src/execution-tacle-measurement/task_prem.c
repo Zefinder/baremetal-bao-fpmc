@@ -11,21 +11,26 @@
 #include <hypercall.h>
 #include <generic_timer.h>
 
-uint8_t pause = 0;
+volatile uint8_t pause = 0;
+volatile uint8_t is_prefetching = 0;
 
-void ipi_pause_handler()
+void ipi_pause_handler(unsigned int id)
 {
-    if (!pause)
+    printf("Baremetal pause? (%d)\n", is_prefetching);
+    if (is_prefetching && !pause)
     {
+        printf("Baremetal pause!\n");
         // Pause task
         pause = 1;
     }
 }
 
-void ipi_resume_handler()
+void ipi_resume_handler(unsigned int id)
 {
-    if (pause)
+    printf("Baremetal resume? (%d)\n", is_prefetching);
+    if (is_prefetching && pause)
     {
+        printf("Baremetal resume!\n");
         // Resume task
         pause = 0;
     }
@@ -68,23 +73,27 @@ void task()
     irq_enable(TIMER_IRQ_ID);
     irq_set_prio(TIMER_IRQ_ID, IRQ_MAX_PRIO);
 
-    uint64_t cpu_id = hypercall(HC_GET_CPU_ID, 0, 0, 0);
+    cpu_id = hypercall(HC_GET_CPU_ID, 0, 0, 0);
     // Interfering task
     while (1)
     {
         clear_L2_cache((uint64_t)appdata, MAX_DATA_SIZE);
-
+        
         // Asking for memory access
+        is_prefetching = 1;
         union memory_request_answer ack_access = {.raw = hypercall(HC_REQUEST_MEM_ACCESS, 1 + (2 * cpu_id - 1), 272079, 0)};
 
         // If access not granted then we suspend task
         pause = ~ack_access.ack;
 
-        // Set time in low prio
-        lowprio_time = generic_timer_read_counter() + ack_access.ttw;
+        if (ack_access.ttw != 0){
+            // Set time in low prio
+            lowprio_time = generic_timer_read_counter() + ack_access.ttw;
+        }
 
         // Access granted
         prefetch_data((uint64_t)appdata, MAX_DATA_SIZE, &pause);
+        is_prefetching = 0;
 
         // Revoke access
         lowprio_time = 0;

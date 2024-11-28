@@ -12,7 +12,7 @@
 
 uint8_t pause = 0;
 
-void ipi_pause_handler()
+void ipi_pause_handler(unsigned int id)
 {
     if (!pause)
     {
@@ -21,7 +21,7 @@ void ipi_pause_handler()
     }
 }
 
-void ipi_resume_handler()
+void ipi_resume_handler(unsigned int id)
 {
     if (pause)
     {
